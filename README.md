@@ -3,9 +3,9 @@ Arduino Bluetooth-LoRa Wireless bridge for Android
 
 Arduino Wireless Bluetooth-LoRa bridge by Josué Galindo
 
-                         |      LoRa| <- Low Power Area Network -> |LoRa     |
-                         | Arduino 1|                              |Arduino 2|
-|Android Device "A"| <-> | Bluetooth|                              |Bluetooth| <-> |Android Device "B"| 
+                             |      LoRa| <- Low Power Area Network -> |LoRa     |
+                             | Arduino 1|                              |Arduino 2|
+    |Android Device "A"| <-> | Bluetooth|                              |Bluetooth| <-> |Android Device "B"| 
 
 In the schematic above, this code runs in Arduino Microcontrollers 1 and 2, 
 which are connected to Android devices A and B respectively via Low Eenrgy Bluettooth (BLE).
