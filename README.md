@@ -1,4 +1,4 @@
-# Arduino_LoRa_Bluetooth_Wireless_Bridge_For_Android
+# Arduino LoRa-Bluetooth Wireless Bridge for Android
 Arduino Bluetooth-LoRa Wireless bridge for Android
 
 Arduino Wireless Bluetooth-LoRa bridge by Josué Galindo
