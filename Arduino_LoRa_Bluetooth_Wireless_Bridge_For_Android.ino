@@ -397,7 +397,10 @@ void setup() {
 
   Radio.Rx( 0 );
   Radio.IrqProcess();
-  Serial.printf("\nSETUP COMPLETE\n");
+  Serial.println();
+  Serial.println("\nSETUP COMPLETE: ");
+  Serial.println(easyChipName.c_str());
+  Serial.println();
 }
 
 
@@ -459,7 +462,7 @@ void drawGLCD_Fixed_Elements() {
 void dispatchLoRaTransmissionBuffer(char* txt) {
 
   char txPacket[256];
-  sprintf(txPacket, "%s,msg=%s", txt, easyChipName);
+  sprintf(txPacket, "%s,user=%s", txt, easyChipName);
   size_t maxSize = sizeof(txPacket);
 
   if (txPacket[0] != '\0') {
