@@ -324,9 +324,7 @@ void OnRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr ) {
 
   const String stringFromLora = String(rxpacket);
   Serial.println("String from LORA Rx: " + stringFromLora);
-  //pCharacteristic->setValue(stringToUnsignedByteArray(stringFromLora), stringFromLora.length());
 
- // uint8_t* uint8ArrayRxPacket = reinterpret_cast<uint8_t*>(rxpacket);
   pCharacteristic->setValue(stringFromLora.c_str());
   pCharacteristic->notify();
   refreshGLCD_BT_Tx(stringFromLora);
@@ -353,7 +351,6 @@ void OnRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr ) {
   refreshGLCD_Lora_Rx(rxLoraMessage);
   refreshGLCD_LoraSignalStrength(rxLoRaSignalStrength);
   blink = TWICE;
-  //refreshAndLogLoraRadioStatus();
   String status = getLoraRadioStatus();
   Serial.println(status);
 }
@@ -377,7 +374,6 @@ void setup() {
 	factory_display.init();
 	factory_display.clear();
 	factory_display.display();
-  
   
 	attachInterrupt(0,interrupt_GPIO0,FALLING);
 	
@@ -459,16 +455,13 @@ void drawGLCD_Fixed_Elements() {
 
 
 
-
 void dispatchLoRaTransmissionBuffer(char* txPacket) {
 
   size_t maxSize = sizeof(txPacket);
-  // Toggle ARDUINO BOARD Activity LED 
+
   if (txPacket[0] != '\0') {
-    // turnActivityLED_ON();  
 
     Serial.printf("%s sending packet \"%s\" , length %d", easyChipName, txPacket, strlen(String(txPacket).c_str())); Serial.println(); Serial.println();
-
     refreshGLCD_Lora_Tx(txPacket);
 
     // TRANSMIT packet over LoRa radio
@@ -480,7 +473,6 @@ void dispatchLoRaTransmissionBuffer(char* txPacket) {
   }
   strcpy(txPacket, "");
   // Ensure null-termination
-  //txPacket[maxSize - 1] = '\0';
   txPacket[0] = '\0';
 }
 
@@ -491,7 +483,6 @@ String mockWantsToTransmitMessage(int16_t syncIndex) {
     Serial.println();
     Serial.printf("%s generated MOCK LoRa Tx Message", easyChipName);
     Serial.println();
-   // state = STATE_TX; // Switch state to ready to Transmitt
     delay(100);
     return txMessage;
   }
@@ -545,7 +536,7 @@ void loop() {
       turnActivityLED_ON();  delay(40);
       break;
     case ONCE:  // Tx
-      // delay(100); in mock
+      // delay(100); in mock mode
       turnActivityLED_ON();  delay(50);
       turnActivityLED_OFF(); 
       break;
