@@ -227,6 +227,7 @@ const String CHIP_SERIAL_DARKSTAR = "2301";
 const String CHIP_ID_WHITETIGER = "7C466AFA12F4";
 const String CHIP_NAME_WHITETIGER = "WHITE TIGER";
 const String CHIP_SERIAL_WHITETIGER = "2252";
+const String easyChipNamePrefix = "LORA-WAN Arduino ";
 String easyChipName;
 String easyChipSerial;
 // Obtains the name of this Arduino Chip
@@ -367,7 +368,7 @@ void setup() {
 	Serial.begin(115200);
 
   setupEasyChipNameAndSerial();
-  initializeBluetooth("LORA-BLE Chiplet "+easyChipName); // BLUETOOTH BLE Init
+  initializeBluetooth(easyChipNamePrefix + easyChipName); // BLUETOOTH BLE Init
 
 	VextON();
 	delay(100);
@@ -455,8 +456,10 @@ void drawGLCD_Fixed_Elements() {
 
 
 
-void dispatchLoRaTransmissionBuffer(char* txPacket) {
+void dispatchLoRaTransmissionBuffer(char* txt) {
 
+  char txPacket[256];
+  sprintf(txPacket, "%s,msg=%s", txt, easyChipName);
   size_t maxSize = sizeof(txPacket);
 
   if (txPacket[0] != '\0') {
