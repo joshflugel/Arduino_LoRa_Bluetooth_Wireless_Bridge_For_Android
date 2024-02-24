@@ -62,7 +62,7 @@ void turnActivityLED_OFF() {
 /********************************* LORA VARS and Init  *********************************************/
 #define RF_FREQUENCY                                868000000 // Hz
 
-#define TX_OUTPUT_POWER                             10        // dBm
+#define TX_OUTPUT_POWER                             16        // dBm, max in EU Region is 16dBm
 
 #define LORA_BANDWIDTH                              0         // [0: 125 kHz,
                                                               //  1: 250 kHz,
@@ -79,8 +79,9 @@ void turnActivityLED_OFF() {
 #define LORA_IQ_INVERSION_ON                        false
 
 
-#define RX_TIMEOUT_VALUE                            1000
-#define BUFFER_SIZE                                 30 // Define the payload size here
+#define RX_TIMEOUT_VALUE                            3000
+#define TX_TIMEOUT_VALUE                            3000
+#define BUFFER_SIZE                                 255       // Define the payload size here
 
 char txpacket[BUFFER_SIZE];
 char rxpacket[BUFFER_SIZE];
@@ -137,7 +138,7 @@ void lora_init(void){
   Radio.SetTxConfig( MODEM_LORA, TX_OUTPUT_POWER, 0, LORA_BANDWIDTH,
                                  LORA_SPREADING_FACTOR, LORA_CODINGRATE,
                                  LORA_PREAMBLE_LENGTH, LORA_FIX_LENGTH_PAYLOAD_ON,
-                                 true, 0, 0, LORA_IQ_INVERSION_ON, 3000 );
+                                 true, 0, 0, LORA_IQ_INVERSION_ON, TX_TIMEOUT_VALUE );
 
   Radio.SetRxConfig( MODEM_LORA, LORA_BANDWIDTH, LORA_SPREADING_FACTOR,
                                  LORA_CODINGRATE, 0, LORA_PREAMBLE_LENGTH,
@@ -162,7 +163,6 @@ String uint64ToString(uint64_t input) {
 }
 /********************************* LORA VARS and Init  end here ***************************************/
 // Actual implementation of this method happens below around Line 303 aprox
-// void OnRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr )
 
 
 
@@ -178,7 +178,7 @@ class androidBluetoothCallbacks: public BLECharacteristicCallbacks {
     Serial.println(pCharacteristic->getValue().c_str());
     Serial.println();
   }
-  // When Android WRITES to BLE Chiplet.  ANDROID BLE -> LoRa
+  // When Android WRITES to BLE Chiplet. ANDROID BLE -> LoRa
   void onWrite(BLECharacteristic *pCharacteristic) {
     String stringFromAndroid = String(pCharacteristic->getValue().c_str());
     stringFromAndroid.toCharArray(txpacket, sizeof(txpacket));
@@ -204,7 +204,6 @@ void initializeBluetooth(String deviceName) {
   BLEDescriptor cccdDescriptor(BLEUUID((uint16_t)0x2902));
   pCharacteristic->addDescriptor(&cccdDescriptor);
   pCharacteristic->setCallbacks(new androidBluetoothCallbacks());
-  pCharacteristic->setValue("Hello World READ");
   pService->start();
   BLEAdvertising *pAdvertising = pServer->getAdvertising();
   pAdvertising->start();
@@ -233,8 +232,8 @@ String easyChipSerial;
 // Obtains the name of this Arduino Chip
 void setupEasyChipNameAndSerial() {
   uint64_t chipid=ESP.getEfuseMac();//The chip ID is essentially its MAC address(length: 6 bytes).
-	Serial.printf("ESP32ChipID=%04X",(uint16_t)(chipid>>32));//print High 2 bytes
-	Serial.printf("%08X\n",(uint32_t)chipid);//print Low 4bytes.
+	Serial.printf("ESP32ChipID=%04X",(uint16_t)(chipid>>32)); //print High 2 bytes
+	Serial.printf("%08X\n",(uint32_t)chipid);                 //print Low 4bytes.
   chipidString = uint64ToString(chipid);
   if(chipidString == CHIP_ID_DARKSTAR) {
     easyChipName = CHIP_NAME_DARKSTAR;
@@ -289,20 +288,20 @@ void VextOFF(void) {   // runs in Main Loop
 
 // LORA TX/RX CALLBACKS
 void OnTxDone( void ) {
-      String status = getLoraRadioStatus();
-    Serial.println(status);
+  String status = getLoraRadioStatus();
+  Serial.println(status);
   Serial.printf("%s: TX completed", easyChipName);
-
-  Radio.Rx( 0 );
+  Serial.println();
+  Radio.Rx(0);
   Radio.IrqProcess();
-	//refreshAndLogLoraRadioStatus();
+	refreshAndLogLoraRadioStatus();
 }
 void OnTxTimeout( void ) {
-      String status = getLoraRadioStatus();
-    Serial.println(status);
+  String status = getLoraRadioStatus();
+  Serial.println(status);
   //Radio.Sleep( );
   Serial.printf("%s: TX Timeout", easyChipName);
-  Radio.Rx( 0 );
+  Radio.Rx(0);
   Radio.IrqProcess();
 	refreshAndLogLoraRadioStatus();
 }
@@ -353,13 +352,19 @@ void OnRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr ) {
   refreshGLCD_LoraSignalStrength(rxLoRaSignalStrength);
   blink = TWICE;
   String status = getLoraRadioStatus();
+  Serial.println("\n\nRxDone");
   Serial.println(status);
 }
 void OnRxTimeout() {
   Serial.println("RX Timeout");
 }
 void OnRxError() {
+  Serial.println();
   Serial.println("RX ERROR");
+  Serial.println();
+  pCharacteristic->setValue("Incoming Message could not be opened.");
+  pCharacteristic->notify();
+  refreshGLCD_BT_Tx("LoRa RX ERROR");
 }
 
 
@@ -368,7 +373,7 @@ void setup() {
 	Serial.begin(115200);
 
   setupEasyChipNameAndSerial();
-  initializeBluetooth(easyChipNamePrefix + easyChipName); // BLUETOOTH BLE Init
+  initializeBluetooth(easyChipNamePrefix + easyChipName);
 
 	VextON();
 	delay(100);
@@ -382,7 +387,7 @@ void setup() {
   factory_display.drawString(0, 10, rxLoraMessage);
   factory_display.display();
   lora_init();  // LORA Init
-  delay(900);
+  delay(800);
   factory_display.clear();
 
   drawGLCD_Fixed_Elements();
@@ -391,11 +396,10 @@ void setup() {
 	digitalWrite(LED, LOW);  
   randomSeed(analogRead(0));
 
-  //empty txpacket
   String empty="";
   empty.toCharArray(txpacket, sizeof(txpacket));
 
-  Radio.Rx( 0 );
+  Radio.Rx(0);
   Radio.IrqProcess();
   Serial.println();
   Serial.println("\nSETUP COMPLETE: ");
@@ -461,13 +465,14 @@ void drawGLCD_Fixed_Elements() {
 
 void dispatchLoRaTransmissionBuffer(char* txt) {
 
-  char txPacket[256];
-  sprintf(txPacket, "%s,user=%s", txt, easyChipName);
-  size_t maxSize = sizeof(txPacket);
-
-  if (txPacket[0] != '\0') {
-
-    Serial.printf("%s sending packet \"%s\" , length %d", easyChipName, txPacket, strlen(String(txPacket).c_str())); Serial.println(); Serial.println();
+  
+  char txPacket[BUFFER_SIZE];
+  if (txt[0] != '\0') {
+    sprintf(txPacket, "%s,user=%s", txt, easyChipName);
+    Serial.println();
+    Serial.println();
+    Serial.printf("%s sending packet \"%s\" , length %d", easyChipName, txPacket, strlen(String(txPacket).c_str()));
+    Serial.println(); 
     refreshGLCD_Lora_Tx(txPacket);
 
     // TRANSMIT packet over LoRa radio
@@ -527,12 +532,6 @@ void refreshAndLogLoraRadioStatus() {
   
 void loop() {
   refreshAndLogLoraRadioStatus();
-
-  String loraStatus = getLoraRadioStatus();
-  Serial.print(loraStatus);
-  if(loraStatus == "LORA TX") {
-    Radio.Rx(0);
-  }
   Radio.IrqProcess();
 
   switch(blink) {
@@ -543,8 +542,8 @@ void loop() {
       break;
     case ONCE:  // Tx
       // delay(100); in mock mode
-      turnActivityLED_ON();  delay(50);
-      turnActivityLED_OFF(); 
+      turnActivityLED_ON();  delay(100);
+      turnActivityLED_OFF(); delay(50);
       break;
     default:
       delay(150);
