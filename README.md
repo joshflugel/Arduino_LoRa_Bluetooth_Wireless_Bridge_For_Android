@@ -20,3 +20,4 @@ issued by DevExpert.io (2024).
 References:
 https://architectcoders.com/
 https://lora-alliance.org/about-lorawan/
+https://heltec.org/project/wifi-lora-32-v3/ Hardware Specs
