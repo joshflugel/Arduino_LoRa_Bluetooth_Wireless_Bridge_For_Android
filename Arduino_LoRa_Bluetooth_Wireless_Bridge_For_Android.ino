@@ -27,8 +27,7 @@ or WiFi connectivity is not available.
 // https://www.uuidgenerator.net/
 #define SERVICE_UUID        "5914b79c-0184-11ee-be56-0242ac120002"
 #define CHARACTERISTIC_UUID "ff9afc85-0dfd-4e22-9a50-832b9a7dac9e"
-BLEServer *pServer;
-BLEService *pService;
+
 BLECharacteristic *pCharacteristic;
 String defaultReadMessage = "You read this from LoRa";
 uint8_t* stringToUnsignedByteArray(const String& str) {
@@ -166,7 +165,22 @@ String uint64ToString(uint64_t input) {
 
 
 
-// ==========================================   BLUETOOTH BLE code block 
+// ==========================================   BLUETOOTH BLE code block  
+bool hasConnectedAfterSetup = false;
+bool isBluetoothConnected = false;
+class BluetoothServerCallbacks: public BLEServerCallbacks {
+    void onConnect(BLEServer* pServer) {
+      isBluetoothConnected = true;
+      hasConnectedAfterSetup = true;
+      Serial.println("BLE Device Connected");
+    }
+
+    void onDisconnect(BLEServer* pServer) {
+      isBluetoothConnected = false;
+      Serial.println("BLE Device Disconnected");
+    }
+};
+
 class androidBluetoothCallbacks: public BLECharacteristicCallbacks {
   // When Android READS from BLE Chiplet
   void onRead(BLECharacteristic* pCharacteristic, esp_ble_gatts_cb_param_t* param){
@@ -190,9 +204,12 @@ class androidBluetoothCallbacks: public BLECharacteristicCallbacks {
   }
   void onNotify(BLECharacteristic  *pCharacteristic) { }
 };
+BLEService *pService;
+BLEServer *pServer;
 void initializeBluetooth(String deviceName) {
   BLEDevice::init(deviceName.c_str());
   pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new BluetoothServerCallbacks());
   pService = pServer->createService(SERVICE_UUID);
   pCharacteristic = pService->createCharacteristic(
                                          CHARACTERISTIC_UUID,
@@ -234,6 +251,7 @@ void setupEasyChipNameAndSerial() {
   uint64_t chipid=ESP.getEfuseMac();//The chip ID is essentially its MAC address(length: 6 bytes).
 	Serial.printf("ESP32ChipID=%04X",(uint16_t)(chipid>>32)); //print High 2 bytes
 	Serial.printf("%08X\n",(uint32_t)chipid);                 //print Low 4bytes.
+  String chipidString;
   chipidString = uint64ToString(chipid);
   if(chipidString == CHIP_ID_DARKSTAR) {
     easyChipName = CHIP_NAME_DARKSTAR;
@@ -405,6 +423,7 @@ void setup() {
   Serial.println("\nSETUP COMPLETE: ");
   Serial.println(easyChipName.c_str());
   Serial.println();
+  hasConnectedAfterSetup = false;
 }
 
 
@@ -526,10 +545,11 @@ String getLoraRadioStatus() {
 void refreshAndLogLoraRadioStatus() {
 	if(loraRadioStatus != getLoraRadioStatus()) {
     loraRadioStatus = getLoraRadioStatus();
-    Serial.println(getLoraRadioStatus());
+    Serial.printf("Lora Radio Status: %s",getLoraRadioStatus());
   }
 }
-  
+
+
 void loop() {
   refreshAndLogLoraRadioStatus();
   Radio.IrqProcess();
@@ -557,9 +577,13 @@ void loop() {
   //Increment up to 99, reset to 0 when number passes 99
   if (i_mainLoop + 1 > 99) {
     i_mainLoop = 0;
-    Serial.printf("\n");
   } else {
     i_mainLoop++;
+  }
+
+  if(hasConnectedAfterSetup == true && isBluetoothConnected == false) {
+     Serial.println("BLE rethrottling device connection");
+     ESP.restart();
   }
 } 
 
