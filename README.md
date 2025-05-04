@@ -1,8 +1,5 @@
 # Arduino LoRa-Bluetooth Wireless Bridge for Android
-Arduino Bluetooth-LoRa Wireless bridge for Android
-
-Arduino Wireless Bluetooth-LoRa bridge by Josué Galindo
-
+Arduino Bluetooth-LoRa Wireless bridge for Android by Josué Galindo
                              |      LoRa| <- Low Power Area Network -> |LoRa     |
                              | Arduino 1|                              |Arduino 2|
     |Android Device "A"| <-> | Bluetooth|                              |Bluetooth| <-> |Android Device "B"| 
@@ -21,3 +18,5 @@ References:
 https://architectcoders.com/
 https://lora-alliance.org/about-lorawan/
 https://heltec.org/project/wifi-lora-32-v3/ Hardware Specs
+
+![SkyLink Banner](/skylink_arduino.png)
